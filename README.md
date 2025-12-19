@@ -4,6 +4,10 @@ Python implementation of the HyDia protocol for privacy-preserving facial matchi
 
 Based on the paper: [HyDia: FHE-based Facial Matching with Hybrid Approximations and Diagonalization](https://petsymposium.org/popets/2025/popets-2025-0146.pdf) by Martin et al. (PETS 2025)
 
+## Usage
+
+uv run main.py --query-image data/john_1.jpg --database-dir data/database  
+
 ## Acknowledgments
 
 - [OpenFHE](https://github.com/openfheorg/openfhe-development)
