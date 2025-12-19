@@ -16,4 +16,5 @@ line-length = 140
 [dependency-groups]
 dev = [
     "mypy>=1.19.1",
+    "ruff>=0.14.10",
 ]
