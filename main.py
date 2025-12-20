@@ -1,3 +1,7 @@
+import warnings
+
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
+
 import argparse
 import inspect
 import sys
@@ -9,30 +13,37 @@ from client import Client
 from enroller import Enroller
 from server import Server
 
-st = time()
-lb = None
 
+class Timer:
+    def __init__(self, enabled: bool) -> None:
+        self.enabled = enabled
+        self.labels: list[str | None] = []
+        self.tiks: list[float] = []
 
-def tik(label: str | None = None) -> None:
-    global st, lb
-    st = time()
-    lb = label
+    def tik(self, label: str | None = None) -> None:
+        self.tiks.append(time())
+        self.labels.append(label)
 
+    def tok(self) -> None:
+        if not self.enabled:
+            return
 
-def tok() -> None:
-    d = time() - st
-    current_frame = inspect.currentframe()
-    if current_frame is None or current_frame.f_back is None:
-        print("Where is your stack?")
-        return
+        st = self.tiks.pop()
+        label = self.labels.pop()
 
-    frame = current_frame.f_back
-    filename = frame.f_code.co_filename
-    lineno = frame.f_lineno
-    if lb is not None:
-        print(f"{filename}:{lineno} {d:.3f}s ({lb})")
-    else:
-        print(f"{filename}:{lineno} {d:.3f}s")
+        d = time() - st
+        current_frame = inspect.currentframe()
+        if current_frame is None or current_frame.f_back is None:
+            print("Where is your stack?")
+            return
+
+        frame = current_frame.f_back
+        filename = frame.f_code.co_filename
+        lineno = frame.f_lineno
+        if label is not None:
+            print(f"{filename}:{lineno} {d:.3f}s ({label})")
+        else:
+            print(f"{filename}:{lineno} {d:.3f}s")
 
 
 class Scenario(Enum):
@@ -44,54 +55,61 @@ def main(
     query_image: Path,
     database_dir: Path,
     scenario: Scenario,
+    show_time: bool,
 ) -> None:
-    tik("client init")
+    t = Timer(enabled=show_time)
+
+    t.tik("total")
+
+    t.tik("client init")
     client = Client()
-    tok()
+    t.tok()
 
-    tik("enroller init")
+    t.tik("enroller init")
     enroller = Enroller(database_dir)
-    tok()
+    t.tok()
 
-    tik("server init")
+    t.tik("server init")
     server = Server()
-    tok()
+    t.tok()
 
     # 1. Setup
-    tik("setup")
+    t.tik("setup")
     params = client.setup()
-    tok()
+    t.tok()
     # 2. Enroll
-    tik("enroll")
+    t.tik("enroll")
     database = enroller.enroll(params)
-    tok()
+    t.tok()
     # 3. Query
-    tik("query")
+    t.tik("query")
     query = client.query(query_image)
-    tok()
+    t.tok()
 
     if scenario == Scenario.identities:
         # 4. Compute
-        tik("compute")
+        t.tik("compute")
         thresholds = server.compute_identities(params, database, query)
-        tok()
+        t.tok()
         # 5. Extract
-        tik("extract")
+        t.tik("extract")
         identities = client.extract_identities(database.labels, thresholds)
-        tok()
+        t.tok()
 
         print("Matched identities:", identities)
     else:
         # 4. Compute
-        tik("compute")
+        t.tik("compute")
         thresholds = server.compute_membership(params, database, query)
-        tok()
+        t.tok()
         # 5. Extract
-        tik("extract")
+        t.tik("extract")
         membership = client.extract_membership(thresholds)
-        tok()
+        t.tok()
 
         print("Membership status:", membership)
+
+    t.tok()
 
 
 if __name__ == "__main__":
@@ -114,6 +132,12 @@ if __name__ == "__main__":
         type=Scenario,
         default=Scenario.identities,
     )
+    parser.add_argument(
+        "--show-time",
+        help="Measure execution time",
+        action="store_true",
+        default=False,
+    )
 
     args = parser.parse_args(sys.argv[1:])
-    main(args.query_image, args.database_dir, args.scenario)
+    main(args.query_image, args.database_dir, args.scenario, args.show_time)

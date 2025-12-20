@@ -6,7 +6,12 @@ Based on the paper: [HyDia: FHE-based Facial Matching with Hybrid Approximations
 
 ## Usage
 
-uv run main.py --query-image data/john_1.jpg --database-dir data/database  
+```shell
+$ uv run main.py --query-image data/biden_1.jpg --database-dir data/database --scenario identities
+Matched identities: ['biden']
+```
+
+See `uv run main.py -h` for more details.
 
 ## Acknowledgments
 
