@@ -42,6 +42,7 @@ class Client:
         key_pair = cc.KeyGen()
         cc.EvalMultKeyGen(key_pair.secretKey)
         cc.EvalRotateKeyGen(key_pair.secretKey, range(EMBEDDING_DIM))
+        cc.EvalSumKeyGen(key_pair.secretKey)
 
         ring_dim = cc.GetRingDimension()
         batch_size = cc.GetBatchSize()
@@ -85,3 +86,10 @@ class Client:
                 i += 1
 
         return identities
+
+    def extract_membership(
+        self,
+        thresholds: openfhe.Ciphertext,
+    ) -> bool:
+        thresholds_pt = self.cc.Decrypt(self.key_pair.secretKey, thresholds).GetCKKSPackedValue()
+        return abs(thresholds_pt[0]) > 1

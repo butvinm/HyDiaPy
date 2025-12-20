@@ -18,6 +18,22 @@ class Server:
 
         return thresholds
 
+    def compute_membership(
+        self,
+        params: ClientParameters,
+        database: EnrollerDatabase,
+        query: openfhe.Ciphertext,
+    ) -> openfhe.Ciphertext:
+        thresholds = self.compute_identities(params, database, query)
+
+        for i in range(len(thresholds)):
+            thresholds[i] = params.cc.EvalSum(thresholds[i], params.batch_size)
+
+        for i in range(1, len(thresholds)):
+            params.cc.EvalAddInPlace(thresholds[0], thresholds[i])
+
+        return thresholds[0]
+
     def _compute_score(
         self,
         cc: openfhe.CryptoContext,
