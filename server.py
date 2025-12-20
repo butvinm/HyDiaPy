@@ -42,8 +42,10 @@ class Server:
         batch: list[openfhe.Ciphertext],
     ) -> openfhe.Ciphertext:
         scores = []
+        m = cc.GetCyclotomicOrder()
+        rotation_precomp = cc.EvalFastRotationPrecompute(query)
         for i in range(embedding_dim):
-            ct_query_i = cc.EvalRotate(query, i)
+            ct_query_i = cc.EvalFastRotation(query, i, m, rotation_precomp)
             s = cc.EvalMultNoRelin(batch[i], ct_query_i)
             scores.append(s)
 
